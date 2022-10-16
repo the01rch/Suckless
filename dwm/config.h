@@ -98,9 +98,8 @@ static const char *downbright[] = { "xbacklight", "-dec", "10", NULL };
 static const char *upbright[] = { "xbacklight", "-inc", "10", NULL };
 static const char *termcmd[] = { "tabbed", "-r 2", "st", "-w", "''", "-e", "tmux", NULL };
 static const char *quitcmd[] = { "powerChoice", NULL };
-static const char *reccmd[] = { "recChoice", NULL };
+static const char *slock[] = { "slock", NULL };
 static const char *dmenubcmd[] = { "dmenuB", NULL };
-static const char *webctoggle[] = { "webctoggle", NULL };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
@@ -117,12 +116,12 @@ static Key keys[] = {
 	{ MODKEY,                       XK_z,      zoom,           {0} },
 	{ MODKEY,                       XK_n,      shiftview,      {.i = +1} },
 	{ MODKEY,                       XK_p,      shiftview,      {.i = -1} },
-	{ MODKEY|ShiftMask,             XK_r,      spawn,          {.v = reccmd} },
+	{ MODKEY|ShiftMask,             XK_l,      spawn,          {.v = slock} },
 	{ MODKEY,                       XK_q,      killclient,     {0} },
 	{ MODKEY|ShiftMask,             XK_q,      spawn,          {.v = quitcmd } },
 	{ MODKEY,                       XK_space,  togglefloating, {0} },
-	{ MODKEY, 		            	XK_l,      cyclelayout,    {.i = -1} },
-	{ MODKEY|ShiftMask,             XK_l,      cyclelayout,    {.i = +1} },
+	{ MODKEY, 		            	XK_m,      cyclelayout,    {.i = -1} },
+	{ MODKEY|ShiftMask,             XK_m,      cyclelayout,    {.i = +1} },
     { MODKEY,                       XK_minus,  setgaps,        {.i = -5 } },
     { MODKEY,                       XK_equal,  setgaps,        {.i = +5 } },
     { MODKEY|ShiftMask,             XK_minus,  setgaps,        {.i = GAP_RESET } },
@@ -139,8 +138,6 @@ static Key keys[] = {
 		{.v = downbright } },
 	{ 0,				            XF86XK_AudioMicMute,       spawn,
 		{.v = tmic } },
-    { 0,                             XF86XK_WebCam,            spawn,
-        {.v = webctoggle } },
 	TAGKEYS(                        XK_1,                      0)
  	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
