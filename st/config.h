@@ -5,8 +5,9 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "FantasqueSansMonoNerdFont:pixelsize=18:antialias=true:autohint=true";
-static char *font2 = "AppleColorEmoji:pixelsize=16:antialias=true:autohint=true";
+static char *font = "FantasqueSansMono-Regular:pixelsize=18:antialias=true:autohint=true";
+static char *font2 = "DejaVuSansMono Nerd Font:pixelsize=17:antialias=true:autohint=true";
+//static char *font2 = "Hack Nerd Font Mono:pixelsize=20:antialias=true:autohint=true";
 
 static int borderpx = 5;
 

@@ -96,7 +96,7 @@ static const char *dmenucmd[] = {
 static const char *tmic[] = { "amixer", "set", "Capture", "toggle", NULL };
 static const char *downbright[] = { "xbacklight", "-dec", "10", NULL };
 static const char *upbright[] = { "xbacklight", "-inc", "10", NULL };
-static const char *termcmd[] = { "tabbed", "-r 2", "st", "-w", "''", "-e", "tmux", NULL };
+static const char *termcmd[] = { "st", "-e", "tmux", NULL };
 static const char *quitcmd[] = { "powerChoice", NULL };
 static const char *slock[] = { "slock", NULL };
 static const char *dmenubcmd[] = { "dmenuB", NULL };
@@ -111,17 +111,15 @@ static Key keys[] = {
 	{ MODKEY,                       XK_j,      focusstack,     {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_j,      setmfact,       {.f = -0.05} },
 	{ MODKEY|ShiftMask,             XK_k,      setmfact,       {.f = +0.05} },
-	{ MODKEY,                       XK_f,      fullscreen,     {0} },
 	{ MODKEY,                       XK_s,      togglesticky,   {0} },
 	{ MODKEY,                       XK_z,      zoom,           {0} },
 	{ MODKEY,                       XK_n,      shiftview,      {.i = +1} },
 	{ MODKEY,                       XK_p,      shiftview,      {.i = -1} },
-	{ MODKEY|ShiftMask,             XK_l,      spawn,          {.v = slock} },
+	{ MODKEY,                       XK_l,      spawn,          {.v = slock} },
 	{ MODKEY,                       XK_q,      killclient,     {0} },
 	{ MODKEY|ShiftMask,             XK_q,      spawn,          {.v = quitcmd } },
 	{ MODKEY,                       XK_space,  togglefloating, {0} },
 	{ MODKEY, 		            	XK_m,      cyclelayout,    {.i = -1} },
-	{ MODKEY|ShiftMask,             XK_m,      cyclelayout,    {.i = +1} },
     { MODKEY,                       XK_minus,  setgaps,        {.i = -5 } },
     { MODKEY,                       XK_equal,  setgaps,        {.i = +5 } },
     { MODKEY|ShiftMask,             XK_minus,  setgaps,        {.i = GAP_RESET } },
