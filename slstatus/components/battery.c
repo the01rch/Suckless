@@ -1,6 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "../util.h"
 
@@ -78,11 +79,13 @@
 	battery_remaining(const char *bat)
 	{
 		uintmax_t charge_now, current_now, m, h;
-		double timeleft;
-		char path[PATH_MAX], state[12];
-        char min[3];
-        char hour[3];
+		double	timeleft;
+		char 	path[PATH_MAX], state[12];
+        char 	min;
+        char 	hour;
+		void	*a;
 
+		(void)a;
 		if (esnprintf(path, sizeof(path),
 		              "/sys/class/power_supply/%s/status", bat) < 0) {
 			return NULL;
@@ -114,33 +117,46 @@
 			h = timeleft;
 			m = (timeleft - (double)h) * 60;
             
-            hour[0] = '0';
-            hour[1] = h + '0';
-            hour[2] = '\0';
-
-            if (m < 10) {
-                min[0] = '0';
-                min[1] = m + '0';
-                min[2] = '\0';
-                return bprintf("%s:%s", hour, min);
-            }
-            return bprintf("%s:%ju", hour, m);
+			if (m < 10) {
+				min = m + 48;
+				hour = h + 48;
+				if (h < 10)
+					return bprintf("0%c:0%c", hour, min);
+				else if (h >= 10)
+					return bprintf("%ju:0%c", h, min);
+			}
+			if (m >= 10)
+			{
+				min = m + 48;
+				hour = h + 48;
+				if (h >= 10)
+					return bprintf("%ju:%ju", h, m);
+				else if (h < 10)
+					return bprintf("0%c:%ju", hour, m);
+			}
         }
         timeleft = (double)current_now / (double)charge_now;
         h = timeleft;
         m = (timeleft - (double)h) * 60;
-        
-        hour[0] = '0';
-        hour[1] = h + '0';
-        hour[2] = '\0';
-
-        if (m < 10) {
-            min[0] = '0';
-            min[1] = m + '0';
-            min[2] = '\0';
-            return bprintf("%s:%s", hour, min);
-        }
-        return bprintf("%s:%ju", hour, m);
+		
+		if (m < 10) {
+			min = m + 48;
+			hour = h + 48;
+			if (h < 10)
+				return bprintf("0%c:0%c", hour, min);
+			else if (h >= 10)
+				return bprintf("%ju:0%c", h, min);
+		}
+		if (m >= 10)
+		{
+			min = m + 48;
+			hour = h + 48;
+			if (h >= 10)
+				return bprintf("%ju:%ju", h, m);
+			else if (h < 10)
+				return bprintf("0%c:%ju", hour, m);
+		}
+		return (const char *)a;
 	}
 #elif defined(__OpenBSD__)
 	#include <fcntl.h>
