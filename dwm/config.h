@@ -10,7 +10,8 @@ static const unsigned int snap      = 30;       /* snap pixel */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 0;        /* 0 means bottom bar */
 static const char *fonts[]          = {
-	"Fantasque Sans Mono:pixelsize=18"
+	"Fantasque Sans Mono:pixelsize=18",
+		"Apple Color Emoji:pixelsize=18"
 };
 static const char dmenufont[]       = "FantasqueSansMonoNerdFont:size=12";
 static const char col_gray1[]       = "#282828";
@@ -93,7 +94,8 @@ static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() 
 static const char *dmenucmd[] = {
 	"dmenu_run", "-m", dmenumon, NULL
 };
-static const char *tmic[] = { "amixer", "set", "Capture", "toggle", NULL };
+static const char *tmic[] = { "amixer", "-D", "pulse", "sset", 
+	"Capture", "toggle", NULL };
 static const char *downbright[] = { "brightnessctl", "set", "10%-", NULL };
 static const char *upbright[] = { "brightnessctl", "set", "+10%", NULL };
 static const char *termcmd[] = { "st", "-e", "tmux", NULL };
