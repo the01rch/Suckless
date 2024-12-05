@@ -11,7 +11,8 @@ static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 0;        /* 0 means bottom bar */
 static const char *fonts[]          = {
 	"Fantasque Sans Mono:pixelsize=18",
-		"Apple Color Emoji:pixelsize=18"
+		"Apple Color Emoji:pixelsize=18",
+		"Noto Sans Arabic:pixelsize=15",
 };
 static const char dmenufont[]       = "FantasqueSansMonoNerdFont:size=12";
 static const char col_gray1[]       = "#282828";
@@ -119,6 +120,7 @@ static Key keys[] = {
 	{ MODKEY,                       XK_p,      shiftview,      {.i = -1} },
 	{ MODKEY,                       XK_l,      spawn,          {.v = slock} },
 	{ MODKEY,                       XK_q,      killclient,     {0} },
+	{ MODKEY,                       XK_a,      togglealwaysontop,{0} },
 	{ MODKEY|ShiftMask,             XK_q,      spawn,          {.v = quitcmd } },
 	{ MODKEY,                       XK_space,  togglefloating, {0} },
 	{ MODKEY, 		            	XK_m,      cyclelayout,    {.i = -1} },
