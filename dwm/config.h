@@ -2,6 +2,7 @@
 
 /* include for media keys*/
 #include <X11/XF86keysym.h>
+#include <unistd.h>
 
 /* appearance */
 static const unsigned int borderpx  = 3;        /* border pixel of windows */
@@ -41,13 +42,13 @@ static const char *colors[][3]      = {
 
 /* volume fnct */
 static const char *upvol[]   = {
-	"/usr/bin/pactl", "set-sink-volume", "0", "+5%",     NULL
+	"/usr/bin/pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%",     NULL
 };
 static const char *downvol[] = {
-	"/usr/bin/pactl", "set-sink-volume", "0", "-5%",     NULL
+	"/usr/bin/pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%",     NULL
 };
 static const char *mutevol[] = {
-	"/usr/bin/pactl", "set-sink-mute",   "0", "toggle",  NULL
+	"/usr/bin/pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle",     NULL
 };
 
 /* tagging */
@@ -97,8 +98,8 @@ static const char *dmenucmd[] = {
 };
 static const char *tmic[] = { "amixer", "-D", "pulse", "sset", 
 	"Capture", "toggle", NULL };
-static const char *downbright[] = { "brightnessctl", "set", "10%-", NULL };
-static const char *upbright[] = { "brightnessctl", "set", "+10%", NULL };
+static const char *downbright[] = { "brightnessctl", "set", "5%-", NULL };
+static const char *upbright[] = { "brightnessctl", "set", "5%+", NULL };
 static const char *termcmd[] = { "st", "-e", "tmux", NULL };
 static const char *quitcmd[] = { "powerChoice", NULL };
 static const char *slock[] = { "slock", NULL };
