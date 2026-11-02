@@ -6,6 +6,7 @@ static char *styledir       = "~/.surf/styles/";
 static char *certdir        = "~/.surf/certificates/";
 static char *cachedir       = "~/.surf/cache/";
 static char *cookiefile     = "~/.surf/cookies.txt";
+static char *dldir = "/home/rr/.surf/dl";
 
 /* Webkit default features */
 /* Highest priority value will be used.
@@ -13,6 +14,9 @@ static char *cookiefile     = "~/.surf/cookies.txt";
  * Per-uri parameters are priority 1
  * Command parameters are priority 2
  */
+
+static Bool showindicators = FALSE; /* Show indicators in window title */
+
 static Parameter defconfig[ParameterLast] = {
 	/* parameter                    Arg value       priority */
 	[AccessMicrophone]    =       { { .i = 0 },     },
@@ -35,7 +39,7 @@ static Parameter defconfig[ParameterLast] = {
 	[JavaScript]          =       { { .i = 1 },     },
 	[KioskMode]           =       { { .i = 0 },     },
 	[LoadImages]          =       { { .i = 1 },     },
-	[MediaManualPlay]     =       { { .i = 1 },     },
+	[MediaManualPlay]     =       { { .i = 0 },     },
 	[PreferredLanguages]  =       { { .v = (char *[]){ NULL } }, },
 	[RunInFullscreen]     =       { { .i = 0 },     },
 	[ScrollBars]          =       { { .i = 1 },     },
@@ -57,7 +61,7 @@ static UriParameters uriparams[] = {
 };
 
 /* default window size: width, height */
-static int winsize[] = { 800, 600 };
+static int winsize[] = { 1280, 720 };
 
 static WebKitFindOptions findopts = WEBKIT_FIND_OPTIONS_CASE_INSENSITIVE |
                                     WEBKIT_FIND_OPTIONS_WRAP_AROUND;
@@ -90,6 +94,7 @@ static WebKitFindOptions findopts = WEBKIT_FIND_OPTIONS_CASE_INSENSITIVE |
 /* This called when some URI which does not begin with "about:",
  * "http://" or "https://" should be opened.
  */
+/* PLUMB(URI) */
 #define PLUMB(u) {\
         .v = (const char *[]){ "/bin/sh", "-c", \
              "xdg-open \"$0\"", u, NULL \
@@ -164,6 +169,7 @@ static Key keys[] = {
 
 	{ MODKEY,                GDK_KEY_n,      find,       { .i = +1 } },
 	{ MODKEY|GDK_SHIFT_MASK, GDK_KEY_n,      find,       { .i = -1 } },
+	{ MODKEY|GDK_SHIFT_MASK, GDK_KEY_w,       playexternal, { 0 } },
 
 	{ MODKEY|GDK_SHIFT_MASK, GDK_KEY_p,      print,      { 0 } },
 	{ MODKEY,                GDK_KEY_t,      showcert,   { 0 } },
@@ -192,5 +198,5 @@ static Button buttons[] = {
 	{ OnLink,       MODKEY,         1,      clicknewwindow, { .i = 1 },     1 },
 	{ OnAny,        0,              8,      clicknavigate,  { .i = -1 },    1 },
 	{ OnAny,        0,              9,      clicknavigate,  { .i = +1 },    1 },
-	{ OnMedia,      MODKEY,         1,      clickexternplayer, { 0 },       1 },
+	{ OnMedia,      GDK_SHIFT_MASK, 1,      clickexternplayer, { 0 },       1 },
 };

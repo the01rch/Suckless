@@ -30,6 +30,7 @@
 #include <X11/X.h>
 #include <X11/Xatom.h>
 #include <glib.h>
+#include <gio/gunixfdlist.h>
 
 #include "arg.h"
 #include "common.h"
@@ -241,6 +242,7 @@ static void find(Client *c, const Arg *a);
 
 /* Buttons */
 static void clicknavigate(Client *c, const Arg *a, WebKitHitTestResult *h);
+static void playexternal(Client *c, const Arg *a);
 static void clicknewwindow(Client *c, const Arg *a, WebKitHitTestResult *h);
 static void clickexternplayer(Client *c, const Arg *a, WebKitHitTestResult *h);
 
@@ -641,7 +643,7 @@ getatom(Client *c, int a)
 
 	return buf;
 }
-
+/*
 void
 updatetitle(Client *c)
 {
@@ -665,6 +667,15 @@ updatetitle(Client *c)
 	} else {
 		gtk_window_set_title(GTK_WINDOW(c->win), name);
 	}
+}
+*/
+void
+updatetitle(Client *c)
+{
+    const char *name = c->overtitle ? c->overtitle :
+                       c->title ? c->title : "";
+
+    gtk_window_set_title(GTK_WINDOW(c->win), name);
 }
 
 void
@@ -1135,6 +1146,7 @@ newview(Client *c, WebKitWebView *rv)
 		   "enable-smooth-scrolling", curconfig[SmoothScrolling].val.i,
 		   "enable-webgl", curconfig[WebGL].val.i,
 		   "media-playback-requires-user-gesture", curconfig[MediaManualPlay].val.i,
+		   "javascript-can-open-windows-automatically", FALSE,
 		   NULL);
 /* For more interesting settings, have a look at
  * http://webkitgtk.org/reference/webkit2gtk/stable/WebKitSettings.html */
@@ -2019,6 +2031,15 @@ clickexternplayer(Client *c, const Arg *a, WebKitHitTestResult *h)
 
 	arg = (Arg)VIDEOPLAY(webkit_hit_test_result_get_media_uri(h));
 	spawn(c, &arg);
+}
+
+void
+playexternal(Client *c, const Arg *a)
+{
+    Arg arg;
+
+    arg = (Arg)VIDEOPLAY(geturi(c));
+    spawn(c, &arg);
 }
 
 int
