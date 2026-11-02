@@ -8,12 +8,14 @@
 #include <strings.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 
 #include <sys/select.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+#include <X11/Xresource.h>
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
@@ -29,7 +31,8 @@
 #define TEXTW(X)              (drw_fontset_getwidth(drw, (X)) + lrpad)
 
 /* enums */
-enum { SchemeNorm, SchemeSel, SchemeOut, SchemeIn, SchemeLast }; /* color schemes */
+enum { SchemeNorm, SchemeSel, SchemeOut, SchemeIn, SchemeInput, SchemeLast }; /* color schemes */
+enum XResType { STRING, INTEGER, FLOAT };
 
 struct item {
 	char *text;
@@ -37,6 +40,12 @@ struct item {
 	struct item *next;
 	int out;
 };
+
+typedef struct {
+	const char *name;
+	enum XResType type;
+	void *dst;
+} XResPref;
 
 static char text[BUFSIZ] = "";
 static char *embed;
@@ -58,12 +67,15 @@ static XIC xic;
 
 static Drw *drw;
 static Clr *scheme[SchemeLast];
+static XrmDatabase xrdb;
 
 #include "config.h"
 
 static char * cistrstr(const char *s, const char *sub);
 static int (*fstrncmp)(const char *, const char *, size_t) = strncasecmp;
 static char *(*fstrstr)(const char *, const char *) = cistrstr;
+static void xresupdate(void);
+static void sigusr1(int sig);        
 
 static void
 appenditem(struct item *item, struct item **list, struct item **last)
@@ -105,6 +117,7 @@ cleanup(void)
 	for (i = 0; i < SchemeLast; i++)
 		free(scheme[i]);
 	drw_free(drw);
+	XrmDestroyDatabase(xrdb);
 	XSync(dpy, False);
 	XCloseDisplay(dpy);
 }
@@ -153,7 +166,7 @@ drawmenu(void)
 	}
 	/* draw input field */
 	w = (lines > 0 || !matches) ? mw - x : inputw;
-	drw_setscheme(drw, scheme[SchemeNorm]);
+	drw_setscheme(drw, scheme[SchemeInput]);
 	drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0);
 
 	curpos = TEXTW(text) - TEXTW(&text[cursor]);
@@ -664,9 +677,10 @@ setup(void)
 	Window pw;
 	int a, di, n, area = 0;
 #endif
+    xresupdate();                                        /* ← NEW: load Xresources first */
 	/* init appearance */
 	for (j = 0; j < SchemeLast; j++)
-		scheme[j] = drw_scm_create(drw, colors[j], 2);
+		scheme[j] = drw_scm_create(drw, (const char **)colors[j], 2);
 
 	clip = XInternAtom(dpy, "CLIPBOARD",   False);
 	utf8 = XInternAtom(dpy, "UTF8_STRING", False);
@@ -748,6 +762,8 @@ setup(void)
 	}
 	drw_resize(drw, mw, mh);
 	drawmenu();
+
+    signal(SIGUSR1, sigusr1);
 }
 
 static void
@@ -758,11 +774,71 @@ usage(void)
 	exit(1);
 }
 
+
+void
+xresload(const XResPref *resource)
+{
+	char *type;
+	XrmValue ret;
+
+	if (!XrmGetResource(xrdb, resource->name, NULL, &type, &ret))
+		return;
+	if (!ret.addr || strncmp(type, "String", sizeof("String")))
+		return;
+
+	switch (resource->type) {
+	case STRING:
+		*(char **)resource->dst = ret.addr;
+		break;
+	case INTEGER:
+		*(int *)resource->dst = strtoul(ret.addr, NULL, 10);
+		break;
+	case FLOAT:
+		*(float *)resource->dst = strtof(ret.addr, NULL);
+		break;
+	}
+}
+
+void
+xresupdate(void)
+{
+	Display *display;
+	char *resm;
+	const XResPref *p;
+
+	display = XOpenDisplay(NULL);
+	if (!display)
+		return;
+	resm = XResourceManagerString(display);
+	if (resm) {
+		xrdb = XrmGetStringDatabase(resm);
+		if (xrdb) {
+			for (p = resources; p < resources + LENGTH(resources); ++p)
+				xresload(p);
+		}
+	}
+	XCloseDisplay(display);
+}
+
+static void
+sigusr1(int sig)
+{
+    int j;
+
+    xresupdate();
+    for (j = 0; j < SchemeLast; j++)
+        scheme[j] = drw_scm_create(drw, (const char **)colors[j], 2);
+    drawmenu();
+}
+
 int
 main(int argc, char *argv[])
 {
 	XWindowAttributes wa;
 	int i;
+
+	XrmInitialize();
+//	xresupdate();
 
 	for (i = 1; i < argc; i++)
 		/* these options take no arguments */
@@ -810,7 +886,7 @@ main(int argc, char *argv[])
 		die("could not get embedding window attributes: 0x%lx",
 		    parentwin);
 	drw = drw_create(dpy, screen, root, wa.width, wa.height);
-	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
+	if (!drw_fontset_create(drw, (const char **)fonts, LENGTH(fonts)))
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
 
