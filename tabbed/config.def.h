@@ -1,26 +1,27 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const char font[]        = "FantasqueSansMonoNerdFont:size=13";
-static const char* normbgcolor  = "#282828";
-static const char* normfgcolor  = "#ebdbb2";
-static const char* selbgcolor   = "#a89984";
-static const char* selfgcolor   = "#282828";
-static const char* urgbgcolor   = "#a89984";
+static const char font[]        = "monospace:size=9";
+static const char* normbgcolor  = "#222222";
+static const char* normfgcolor  = "#cccccc";
+static const char* selbgcolor   = "#555555";
+static const char* selfgcolor   = "#ffffff";
+static const char* urgbgcolor   = "#111111";
 static const char* urgfgcolor   = "#cc0000";
 static const char before[]      = "<";
 static const char after[]       = ">";
 static const char titletrim[]   = "...";
-static const int  tabwidth      = 25;
-static const Bool foreground    = False;
+static const int  tabwidth      = 200;
+static const Bool foreground    = True;
 static       Bool urgentswitch  = False;
+
 /*
  * Where to place a new tab when it is opened. When npisrelative is True,
  * then the current position is changed + newposition. If npisrelative
  * is False, then newposition is an absolute position.
  */
-static int  newposition   = 1;
-static Bool npisrelative  = True;
+static int  newposition   = 0;
+static Bool npisrelative  = False;
 
 #define SETPROP(p) { \
         .v = (char *[]){ "/bin/sh", "-c", \
@@ -33,17 +34,15 @@ static Bool npisrelative  = True;
 }
 
 #define MODKEY ControlMask
-#define ALTKEY Mod1Mask
-
-static Key keys[] = {
+static const Key keys[] = {
 	/* modifier             key        function     argument */
-	{ MODKEY,               XK_Return, focusonce,   { 0 } },
-	{ MODKEY|ALTKEY,               XK_t,      spawn,            { 0 } },
+	{ MODKEY|ShiftMask,     XK_Return, focusonce,   { 0 } },
+	{ MODKEY|ShiftMask,     XK_Return, spawn,       { 0 } },
 
-	{ MODKEY|ALTKEY,               XK_l,      rotate,      { .i = +1 } },
-	{ MODKEY|ALTKEY,               XK_h,      rotate,      { .i = -1 } },
-	{ MODKEY|ALTKEY,               XK_j,      movetab,     { .i = -1 } },
-	{ MODKEY|ALTKEY,               XK_k,      movetab,     { .i = +1 } },
+	{ MODKEY|ShiftMask,     XK_l,      rotate,      { .i = +1 } },
+	{ MODKEY|ShiftMask,     XK_h,      rotate,      { .i = -1 } },
+	{ MODKEY|ShiftMask,     XK_j,      movetab,     { .i = -1 } },
+	{ MODKEY|ShiftMask,     XK_k,      movetab,     { .i = +1 } },
 	{ MODKEY,               XK_Tab,    rotate,      { .i = 0 } },
 
 	{ MODKEY,               XK_grave,  spawn,       SETPROP("_TABBED_SELECT_TAB") },

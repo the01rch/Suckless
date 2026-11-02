@@ -52,3 +52,4 @@ index eafe28a..b0b9662 100644
  
  	/* init atoms */
  	wmatom[WMDelete] = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+
