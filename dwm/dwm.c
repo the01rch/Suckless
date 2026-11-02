@@ -36,6 +36,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
+#include <X11/Xresource.h>
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif /* XINERAMA */
@@ -65,6 +66,7 @@ enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
 enum { 
     SchemeNorm, 
     SchemeSel, 
+    SchemeTitle, 
     SchemeTag, 
     SchemeSelT,
     SchemeMode,
@@ -169,6 +171,19 @@ typedef struct {
 	int monitor;
 } Rule;
 
+/* Xresources preferences */
+enum resource_type {
+	STRING = 0,
+	INTEGER = 1,
+	FLOAT = 2
+};
+
+typedef struct {
+	char *name;
+	enum resource_type type;
+	void *dst;
+} ResourcePref;
+
 /* function declarations */
 static void applyrules(Client *c);
 static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
@@ -264,6 +279,10 @@ static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 static int drawstatusbar(Monitor *m, int bh, char* text);
+static void load_xresources(void);
+static void resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst);
+static void reload_xresources(const Arg *arg);
+static void sigreload(int unused);
 
 /* variables */
 static const char broken[] = "broken";
@@ -908,23 +927,21 @@ drawbar(Monitor *m)
 		drw_setscheme(drw, scheme[SchemeSelSA]);
 	drw_arrow(drw, x, 0, plw, bh, 1, 0);
 	x += plw;
-    
+
 	if ((w = m->ww - sw - x) > bh) {
-		if (m->sel) {
-			drw_setscheme(drw, scheme[m == selmon ? SchemeStatus : SchemeSel]);
-			drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
-			if (m->sel->isfloating)
-			{
-				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
-				if (m->sel->isalwaysontop)
-					drw_rect(drw, x + boxs, bh - boxw, boxw, boxw, 0, 0);
-			}
-			
-		} else {
-			drw_setscheme(drw, scheme[SchemeStatus]);
-			drw_rect(drw, x, 0, w, bh, 1, 1);
-		}
-	}
+    if (m->sel) {
+        drw_setscheme(drw, scheme[SchemeTitle]);          // ← always, not just on selmon
+        drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
+        if (m->sel->isfloating) {
+            drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
+            if (m->sel->isalwaysontop)
+                drw_rect(drw, x + boxs, bh - boxw, boxw, boxw, 0, 0);
+        }
+    } else {
+        drw_setscheme(drw, scheme[SchemeTitle]);          // ← was SchemeStatus
+        drw_rect(drw, x, 0, w, bh, 1, 1);
+    }
+}    
 
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
 }
@@ -1138,6 +1155,7 @@ isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info)
 }
 #endif /* XINERAMA */
 
+/* old one
 void
 keypress(XEvent *e)
 {
@@ -1152,6 +1170,30 @@ keypress(XEvent *e)
 		&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
 		&& keys[i].func)
 			keys[i].func(&(keys[i].arg));
+}
+*/
+
+void
+keypress(XEvent *e)
+{
+    unsigned int i;
+    KeySym keysym;
+    XKeyEvent *ev;
+    unsigned int state;
+
+    ev = &e->xkey;
+    keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+    state = CLEANMASK(ev->state);
+
+    /* Treat Super (Mod4) as Alt (Mod1) */
+    if (state & Mod4Mask)
+        state = (state & ~Mod4Mask) | Mod1Mask;
+
+    for (i = 0; i < LENGTH(keys); i++)
+        if (keysym == keys[i].keysym
+        && CLEANMASK(keys[i].mod) == state
+        && keys[i].func)
+            keys[i].func(&(keys[i].arg));
 }
 
 void
@@ -1211,6 +1253,8 @@ manage(Window w, XWindowAttributes *wa)
 	updatewindowtype(c);
 	updatesizehints(c);
 	updatewmhints(c);
+	c->x = c->mon->mx + (c->mon->mw - WIDTH(c)) / 2;
+	c->y = c->mon->my + (c->mon->mh - HEIGHT(c)) / 2;
 	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
 	grabbuttons(c, 0);
 	if (!c->isfloating)
@@ -1765,6 +1809,8 @@ setup(void)
 
 	/* clean up any zombies immediately */
 	sigchld(0);
+
+	signal(SIGUSR1, sigreload);
 
 	/* init screen */
 	screen = DefaultScreen(dpy);
@@ -2436,6 +2482,96 @@ zoom(const Arg *arg)
 	pop(c);
 }
 
+void
+resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
+{
+	char *sdst = NULL;
+	int *idst = NULL;
+	float *fdst = NULL;
+
+	sdst = dst;
+	idst = dst;
+	fdst = dst;
+
+	char fullname[256];
+	char *type;
+	XrmValue ret;
+
+	snprintf(fullname, sizeof(fullname), "%s.%s", "dwm", name);
+	fullname[sizeof(fullname) - 1] = '\0';
+
+	XrmGetResource(db, fullname, "*", &type, &ret);
+	if (!(ret.addr == NULL || strncmp("String", type, 64)))
+	{
+		switch (rtype) {
+		case STRING:
+			strcpy(sdst, ret.addr);
+			break;
+		case INTEGER:
+			*idst = strtoul(ret.addr, NULL, 10);
+			break;
+		case FLOAT:
+			*fdst = strtof(ret.addr, NULL);
+			break;
+		}
+	}
+}
+
+void
+load_xresources(void)
+{
+	Display *display;
+	char *resm;
+	XrmDatabase db;
+	ResourcePref *p;
+
+	display = XOpenDisplay(NULL);
+	if (!display) return;
+	
+	resm = XResourceManagerString(display);
+	if (!resm) {
+		XCloseDisplay(display);
+		return;
+	}
+
+	db = XrmGetStringDatabase(resm);
+	for (p = resources; p < resources + LENGTH(resources); p++)
+		resource_load(db, p->name, p->type, p->dst);
+		
+	XrmDestroyDatabase(db); // Force clear the parsed database
+	XCloseDisplay(display);
+}
+
+void
+reload_xresources(const Arg *arg)
+{
+	// 1. Load new colors into memory
+	load_xresources();
+
+	// 2. Recreate the schemes for all 13 of your custom colors
+	for (size_t i = 0; i < LENGTH(colors); i++)
+		scheme[i] = drw_scm_create(drw, colors[i], 3);
+
+	// 3. Redraw the bar
+	updatebars();
+	for (Monitor *m = mons; m; m = m->next) {
+		XClearWindow(dpy, m->barwin);
+		drawbar(m);
+	}
+
+	// 4. Force window borders to redraw
+	arrange(NULL);
+	focus(NULL);
+	XSync(dpy, False);
+}
+
+void
+sigreload(int unused)
+{
+	Arg a = {.i = 0};
+	reload_xresources(&a);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -2448,6 +2584,8 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display");
 	checkotherwm();
+	XrmInitialize();
+	load_xresources();
 	setup();
 #ifdef __OpenBSD__
 	if (pledge("stdio rpath proc exec", NULL) == -1)
