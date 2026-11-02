@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <X11/Xlib.h>
+#include <X11/Xresource.h>
 
 #include "arg.h"
 #include "slstatus.h"
@@ -89,6 +90,95 @@ drw_arrow(Display *dpy, int x, int y, unsigned int w, unsigned int h, int direct
         //XFillPolygon(dpy, draw, gc, points, 3, Nonconvex, CoordModeOrigin);
 }
 */
+
+void
+loadxresources(void)
+{
+    Display *dpy;
+    XrmDatabase db;
+    XrmValue value;
+    char *type;
+    const char *res;
+
+    if (!(dpy = XOpenDisplay(NULL)))
+        return;
+
+    XrmInitialize();
+    if (!(res = XResourceManagerString(dpy))) {
+        XCloseDisplay(dpy);
+        return;
+    }
+    db = XrmGetStringDatabase(res);
+
+#define LOAD(key, dst) \
+    if (XrmGetResource(db, key, "String", &type, &value)) \
+        snprintf(dst, sizeof(dst), "%s", value.addr)
+
+    LOAD("slstatus.normfg", normfgcolor);
+    LOAD("slstatus.normbg", normbgcolor);
+    LOAD("slstatus.accent", accentcolor);
+    LOAD("slstatus.alt",    altcolor);
+    LOAD("slstatus.sel",    selcolor);
+
+#undef LOAD
+
+    XrmDestroyDatabase(db);
+    XCloseDisplay(dpy);
+}
+
+void
+setupcolors(void)
+{
+    /* Arrow 1 (To mic/vol): BG=a89984, FG=3c3836 */
+    snprintf(fmt_sep1, sizeof fmt_sep1, 
+        "^b%s^^c%s^%%s ", altcolor, altcolor);
+
+    /* Arrow 2 (To btn/bat): BG=ebdbb2, FG=a89984 */
+    snprintf(fmt_sep2, sizeof fmt_sep2, 
+        "^b%s^^c%s^%%s ", selcolor, selcolor);
+
+    /* Arrow 3 (To date): BG=af3a03, FG=ebdbb2 */
+    snprintf(fmt_sep3, sizeof fmt_sep3, 
+        "^b%s^^c%s^%%s ", accentcolor, accentcolor);
+
+    /* Mic (BG: a89984). Muted: ebdbb2. Unmuted: 3c3836 */
+    snprintf(fmt_miccmd, sizeof fmt_miccmd,
+        "amixer -c 1 -M -D pulse sget Capture | grep -q 'off' "
+        "&& printf '^b%s^^c%s^mic ' || printf '^b%s^^c%s^mic '", 
+        altcolor, normfgcolor, altcolor, normbgcolor);
+
+    /* Vol (BG: a89984). Muted: ebdbb2. Unmuted: 3c3836 */
+    snprintf(fmt_volcmd, sizeof fmt_volcmd,
+        "amixer -c 1 -M -D pulse sget Master | grep -q 'off' "
+        "&& printf '^b%s^^c%s^vol ' || printf '^b%s^^c%s^vol '", 
+        altcolor, normfgcolor, altcolor, normbgcolor);
+
+    /* Levels (BG: a89984, Text: 3c3836) */
+    snprintf(fmt_miclevel, sizeof fmt_miclevel, 
+        "^b%s^^c%s^%%s ", altcolor, normbgcolor);
+        
+    snprintf(fmt_vollevel, sizeof fmt_vollevel, 
+        "^b%s^^c%s^%%s ", altcolor, normbgcolor);
+
+    /* Btn (BG: ebdbb2, Text: 3c3836) */
+    snprintf(fmt_btncmd, sizeof fmt_btncmd, 
+        "printf '^b%s^^c%s^btn '", selcolor, normbgcolor);
+        
+    snprintf(fmt_btnlevel, sizeof fmt_btnlevel, 
+        "^b%s^^c%s^%%s", selcolor, normbgcolor);
+
+    /* Bat (BG: ebdbb2, Text: 3c3836) */
+    snprintf(fmt_bat, sizeof fmt_bat, 
+        "^b%s^^c%s^ %%s", selcolor, normbgcolor);
+        
+    snprintf(fmt_bat_perc, sizeof fmt_bat_perc, 
+        "^b%s^^c%s^%%s%%%% ", selcolor, normbgcolor);
+
+    /* Date (BG: af3a03, Text: ebdbb2) */
+    snprintf(fmt_date, sizeof fmt_date, 
+        "^b%s^^c%s^ %%s, ", accentcolor, selcolor);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -115,6 +205,8 @@ main(int argc, char *argv[])
 		usage();
 	}
 
+	loadxresources();
+	setupcolors();
 	memset(&act, 0, sizeof(act));
 	act.sa_handler = terminate;
 	sigaction(SIGINT,  &act, NULL);

@@ -4,7 +4,7 @@
 const unsigned int interval = 1000;
 
 /* text to show if no value can be retrieved */
-static const char unknown_str[] = "n/a";
+static const char unknown_str[] = "00:00";
 
 /* maximum output string length */
 #define MAXLEN 2048
@@ -61,11 +61,66 @@ static const char unknown_str[] = "n/a";
  * vol_perc            OSS/ALSA volume in percent      mixer file (/dev/mixer)
  *                                                     NULL on OpenBSD
  */
+
+/* mutable color buffers (overwritten by Xresources at startup) */
+static char normfgcolor[16] = "#a89984";
+static char normbgcolor[16] = "#3c3836";
+static char accentcolor[16] = "#af3a03";
+static char selcolor[16]    = "#ebdbb2";
+static char altcolor[16]    = "#d5c4a1";
+
+/* format strings, filled by setupcolors() */
+static char fmt_sep1[64];
+static char fmt_mic[64];
+static char fmt_miccmd[256];
+static char fmt_miclevel[64];
+static char fmt_volcmd[256];
+static char fmt_vollevel[64];
+static char fmt_btncmd[256];
+static char fmt_bat_perc[64];
+static char fmt_btnlevel[64];
+static char fmt_sep2[64];
+static char fmt_bat[64];
+static char fmt_sep3[64];
+static char fmt_date[64];
+
+void setupcolors(void);   /* prototype */
+
 static const struct arg args[] = {
-	/* function             format             argument */
-    //{ wifi_status, "   %s ", "wlp2s0" },
-    //{ run_command, " %s ",
-    //    "rfkill list bluetooth | grep -q 'yes' && echo '  off' || echo '  on'" },
+    /* function             format             argument */
+
+    { separator,        fmt_sep1,       "^a^" },
+
+    { run_command,      "%s",           fmt_miccmd },
+    { run_command,      fmt_miclevel,
+        "amixer -c 1 -M -D pulse sget Capture "
+        "| awk -F'[][]' '/Left:/ { n=$2; sub(/%/, \"\", n); "
+        "printf \"%02d%%\\n\", n }'" },
+
+    { run_command,      "%s",           fmt_volcmd },
+    { run_command,      fmt_vollevel,
+        "amixer -c 1 -M -D pulse sget Master "
+        "| awk -F'[][]' '/Left:/ { n=$2; sub(/%/, \"\", n); "
+        "printf \"%02d%%\\n\", n }'" },
+
+    { separator,        fmt_sep2,       "^a^" },
+
+    { run_command,      "%s",           fmt_btncmd },
+    { run_command,      fmt_btnlevel,
+        "brightnessctl -m | awk -F, '{ n=$4; sub(/%/, \"\", n); "
+        "printf \"%02d%%\\n\", n }'" },
+
+    { battery_state,    fmt_bat,        "BAT0" },
+    { battery_perc,     fmt_bat_perc,   "BAT0" }, 
+
+    { separator,        fmt_sep3,       "^a^" },
+    { datetime,         fmt_date,       "%a, %b %d" },
+    { datetime,         "%s    ",       "%H:%M" },
+};
+
+/*
+static const struct arg args[] = {
+	// function             format             argument 
     { separator, "^b#504945^^c#504945^%s ", "^a^" },
     { run_command, "^c#a89984^%s", 
         "amixer -c 1 -M -D pulse sget Capture | grep -q 'off' && echo 'mic ' || echo '^c#ebdbb2^mic '" },
@@ -76,10 +131,10 @@ static const struct arg args[] = {
     { run_command, "^c#a89984^%s ", 
         "amixer -c 1 -M -D pulse sget Master | awk -F'[][]' '/Left:/ { print $2 }'" },
     { separator, "^b#a89984^%s", "^a^" },
-    { battery_state, "^b#a89984^^c#282828^ %s ", "BAT0" },
     { battery_perc, "%s, ", "BAT0" },
     { battery_remaining, "%s ", "BAT0" },
     { separator, "^c#d65d0e^%s", "^a^" },
     { datetime, "^b#d65d0e^^c#282828^ %s, ", "%a, %b %d" },
     { datetime, "%s    ", "%H:%M" },
 };
+*/
