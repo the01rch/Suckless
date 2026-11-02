@@ -5,8 +5,8 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "FantasqueSansMono-Regular:pixelsize=18:antialias=true:autohint=true";
-static char *font2 = "DejaVuSansMono Nerd Font:pixelsize=17:antialias=true:autohint=true";
+static char *font = "FantasqueSansMono-Regular:pixelsize=16:antialias=true:autohint=true";
+static char *font2 = "DejaVuSansMono Nerd Font:pixelsize=16:antialias=true:autohint=true";
 //static char *font2 = "Hack Nerd Font Mono:pixelsize=20:antialias=true:autohint=true";
 
 static int borderpx = 5;
@@ -99,40 +99,43 @@ unsigned int tabspaces = 4;
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
 	/* 8 normal colors */
-    "#282828", // black
+    "#fbf1c7", // black
 	"#cc241d", // red
 	"#98971a", // green
 	"#d79921", // yellow
 	"#458588", // blue
 	"#b16286", // magenta
 	"#689d6a", // cyan
-	"#a89984", // gray
+	"#7c6f64", // gray
 
 	/* 8 bright colors */
 	"#928374", // black
-    "#fb4934", // red
-    "#b8bb26", // green
-    "#fabd2f", // yellow
-    "#83a598", // blue
-    "#d3869b", // magenta
-    "#8ec07c", // cyan
-    "#ebdbb2", // gray
+    "#9d0006", // red
+    "#79740e", // green
+    "#b57614", // yellow
+    "#076678", // blue
+    "#8f3f71", // magenta
+    "#427b58", // cyan
+    "#3c3836", // gray
 
 	[255] = 0,
 
 	/* more colors can be added after 255 to use with DefaultXX */
-	"#cccccc",      //256
-	"#555555",      //257
-    "#d65d0e"       //258
+	"#cccccc",      // 256  cursor
+	"#555555",      // 257  reverse cursor
+	"#3c3836",      // 258  default foreground
+	"#fbf1c7"       // 259  default background
 };
 
 /*
  * Default colors (colorname index)
  * foreground, background, cursor, reverse cursor
+ *
+ * NOTE: defaultfg/defaultbg must NOT be static — st.h declares them extern.
  */
-unsigned int defaultfg = 7;
-unsigned int defaultbg = 0;
-static unsigned int defaultcs = 256;
+unsigned int defaultfg  = 258;
+unsigned int defaultbg  = 259;
+static unsigned int defaultcs  = 256;
 static unsigned int defaultrcs = 257;
 
 /*
@@ -228,8 +231,8 @@ static Shortcut shortcuts[] = {
 //	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i =  0} },
 	{ Mod1Mask,	            XK_u,   		kscrollup,	    {.i = -1} },
 	{ Mod1Mask,	            XK_d,   		kscrolldown,    {.i = -1} },
-	{ ControlMask,		    XK_j,	    	kscrolldown,	{.i =  1} },
-    { ControlMask,		    XK_k,	    	kscrollup,   	{.i =  1} },
+	//{ ControlMask,		    XK_j,	    	kscrolldown,	{.i =  1} },
+   // { ControlMask,		    XK_k,	    	kscrollup,   	{.i =  1} },
 };
 
 /*
@@ -501,3 +504,39 @@ static char ascii_printable[] =
 	" !\"#$%&'()*+,-./0123456789:;<=>?"
 	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
 	"`abcdefghijklmnopqrstuvwxyz{|}~";
+
+/* X resources to update */
+static const XResPref resources[] = {
+	/* name                    type     address */
+	{ "st.font",               STRING,  &font },
+	{ "st.color0",             STRING,  &colorname[0] },
+	{ "st.color1",             STRING,  &colorname[1] },
+	{ "st.color2",             STRING,  &colorname[2] },
+	{ "st.color3",             STRING,  &colorname[3] },
+	{ "st.color4",             STRING,  &colorname[4] },
+	{ "st.color5",             STRING,  &colorname[5] },
+	{ "st.color6",             STRING,  &colorname[6] },
+	{ "st.color7",             STRING,  &colorname[7] },
+	{ "st.color8",             STRING,  &colorname[8] },
+	{ "st.color9",             STRING,  &colorname[9] },
+	{ "st.color10",            STRING,  &colorname[10] },
+	{ "st.color11",            STRING,  &colorname[11] },
+	{ "st.color12",            STRING,  &colorname[12] },
+	{ "st.color13",            STRING,  &colorname[13] },
+	{ "st.color14",            STRING,  &colorname[14] },
+	{ "st.color15",            STRING,  &colorname[15] },
+	{ "st.foreground",         STRING,  &colorname[258] },
+	{ "st.background",         STRING,  &colorname[259] },
+	{ "st.cursorColor",        STRING,  &colorname[256] },
+	{ "st.cursorColorReverse", STRING,  &colorname[257] },
+	{ "st.termname",           STRING,  &termname },
+	{ "st.shell",              STRING,  &shell },
+	{ "st.minlatency",         INTEGER, &minlatency },
+	{ "st.maxlatency",         INTEGER, &maxlatency },
+	{ "st.blinktimeout",       INTEGER, &blinktimeout },
+	{ "st.bellvolume",         INTEGER, &bellvolume },
+	{ "st.tabspaces",          INTEGER, &tabspaces },
+	{ "st.borderpx",           INTEGER, &borderpx },
+	{ "st.cwscale",            FLOAT,   &cwscale },
+	{ "st.chscale",            FLOAT,   &chscale },
+};
